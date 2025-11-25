@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<UIVisualizer ServiceId="{A452AFEA-3DF6-46BB-9177-C0B08F318025}" Id="1" MenuName="Add to Image Watch"/>
+	<Type Name="nerd_recruitment::Bitmap">
+		<UIVisualizer ServiceId="{A452AFEA-3DF6-46BB-9177-C0B08F318025}" Id="1" />
+	</Type>
+	<Type Name="nerd_recruitment::Bitmap">
+		<Expand>
+			<Synthetic Name="[type]"><DisplayString>UINT8</DisplayString></Synthetic>
+			<Synthetic Name="[channels]" Condition="m_channels==1"><DisplayString>1</DisplayString></Synthetic>
+			<Synthetic Name="[channels]" Condition="m_channels==2"><DisplayString>2</DisplayString></Synthetic>
+			<Synthetic Name="[channels]" Condition="m_channels==3"><DisplayString>RGB</DisplayString></Synthetic>
+			<Synthetic Name="[channels]" Condition="m_channels==4"><DisplayString>RGBA</DisplayString></Synthetic>
+			<Item Name="[width]" >m_width</Item>
+			<Item Name="[height]">m_height</Item>
+			<Item Name="[data]"  >m_buffer</Item>
+			<Item Name="[stride]">m_stride</Item>
+		</Expand>
+	</Type>
+</AutoVisualizer>

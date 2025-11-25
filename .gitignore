@@ -1,0 +1,39 @@
+# Build directories need no tracking
+/bin
+/lib
+/build
+**/.venv
+**/__pycache__
+
+# sources required by NERD recruitment evaluation
+/external
+
+# IDE files are of no use
+/.vs/*
+/.vscode
+
+# Sample images
+/source/Rotation/Data/*.bmp
+/source/Rotation/Data/*.png
+
+# tools directory or byproducts
+/buildchain
+/documentation/*.aux
+/documentation/include/*.aux
+/documentation/*.toc
+/documentation/*.out
+/documentation/*.log
+/documentation/*.synctex.gz
+
+# Generated files
+all.h
+imgui.ini
+manifest.submission.txt
+*.zip
+
+# evaluation artifacts
+source/AMazeMe/Candidates/*/report.html
+source/AMazeMe/Candidates/*/ress/
+source/AMazeMe/Candidates/*/stats/
+source/AMazeMe/Candidates/*/*.mp4
+source/AMazeMe/mazes_random/

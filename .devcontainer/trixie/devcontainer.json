@@ -1,0 +1,19 @@
+{
+    "name": "NERD Recruitment Trixie",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools"
+            ],
+            "settings": {
+                "cmake.buildDirectory": "${workspaceFolder}/build/${buildKit}",
+                "cmake.generator": "Ninja Multi-Config",
+                "cmake.useCMakePresets": "never"
+            }
+        }
+    }
+}

@@ -1,0 +1,131 @@
+{
+    "version": 4,
+    "cmakeMinimumRequired":
+    {
+        "major": 3,
+        "minor": 23,
+        "patch": 0
+    },
+    "configurePresets":
+    [
+        {
+            "name":            "windows-host",
+            "description":     "Only enabled when called from Windows",
+            "hidden":          true,
+            "condition":       {"lhs":"${hostSystemName}", "type":"equals", "rhs":"Windows"}
+        },
+        {
+            "name":            "non-windows-host",
+            "description":     "Only enabled when called from anything but Windows",
+            "hidden":          true,
+            "condition":       {"lhs":"${hostSystemName}", "type":"notEquals", "rhs":"Windows"}
+        },
+        {
+            "name":            "vs",
+            "description":     "Base for all VS generators",
+            "hidden":          true,
+            "binaryDir":       "${sourceDir}/build/${presetName}",
+            "inherits":        ["windows-host"]
+        },
+        {
+            "name":            "vs2022",
+            "description":     "Base for all VS2022 generators",
+            "hidden":          true,
+            "generator":       "Visual Studio 17 2022",
+            "inherits":        ["vs"]
+        },
+        {
+            "name":            "vs-x86",
+            "description":     "Sets the architecture of VS generators to be x86",
+            "hidden":          true,
+            "architecture":    "Win32"
+        },
+        {
+            "name":            "vs-x64",
+            "description":     "Sets the architecture of VS generators to be x64",
+            "hidden":          true,
+            "architecture":    "x64"
+        },
+        {
+            "name":            "vs-clangcl",
+            "description":     "Sets the toolset of VS generators to be ClangCL",
+            "hidden":          true,
+            "toolset":         "ClangCL"
+        },
+        {
+            "name":            "ninja",
+            "hidden":          true,
+            "generator":       "Ninja Multi-Config",
+            "binaryDir":       "${sourceDir}/build/${hostSystemName}-${presetName}"
+        },
+        {
+            "name":            "make",
+            "hidden":          true,
+            "generator":       "Unix Makefiles",
+            "binaryDir":       "${sourceDir}/build/${hostSystemName}-${presetName}"
+        },
+        {
+            "name":            "gcc",
+            "description":     "Sets env variables to force Make and Ninja generators to use GCC",
+            "hidden":          true,
+            "environment":     {"CC":"gcc", "CXX":"g++"}
+        },
+        {
+            "name":            "clang",
+            "description":     "Sets env variables to force Make and Ninja generators to use Clang",
+            "hidden":          true,
+            "environment":     {"CC":"clang", "CXX":"clang++"}
+        },
+        {
+            "name":            "debug",
+            "description":     "Sets the build type to Debug. Intended for single-configuration generators such as make.",
+            "hidden":          true,
+            "cacheVariables":  {"CMAKE_BUILD_TYPE":{"type":"STRING", "value":"Debug"}}
+        },
+        {
+            "name":            "relwithdebinfo",
+            "description":     "Sets the build type to Debug. Intended for single-configuration generators such as make.",
+            "hidden":          true,
+            "cacheVariables":  {"CMAKE_BUILD_TYPE":{"type":"STRING", "value":"RelWithDebInfo"}}
+        },
+
+        {"name":"windows-x86-msvc2022-vs2022", "displayName":"VS2022 Win32",                     "inherits":["vs2022", "vs-x86"]},
+        {"name":"windows-x64-msvc2022-vs2022", "displayName":"VS2022 Win64",                     "inherits":["vs2022", "vs-x64"]},
+        {"name":"windows-x86-clang-vs2022",    "displayName":"VS2022 Win32 (Clang)",             "inherits":["vs2022", "vs-x86", "vs-clangcl"]},
+        {"name":"windows-x64-clang-vs2022",    "displayName":"VS2022 Win64 (Clang)",             "inherits":["vs2022", "vs-x64", "vs-clangcl"]},
+
+        {"name":"gcc-ninja",                   "displayName":"GCC with Ninja",                   "inherits":["non-windows-host", "gcc", "ninja"]},
+        {"name":"gcc-make-debug",              "displayName":"GCC with Make (Debug)",            "inherits":["non-windows-host", "gcc", "make", "debug"]},
+        {"name":"gcc-make-relwithdebinfo",     "displayName":"GCC with Make (RelWithDebInfo)",   "inherits":["non-windows-host", "gcc", "make", "relwithdebinfo"]},
+
+        {"name":"clang-ninja",                 "displayName":"Clang with Ninja",                 "inherits":["non-windows-host", "clang", "ninja"]},
+        {"name":"clang-make-debug",            "displayName":"Clang with Make (Debug",           "inherits":["non-windows-host", "clang", "make", "debug"]},
+        {"name":"clang-make-relwithdebinfo",   "displayName":"Clang with Make (RelWithDebInfo)", "inherits":["non-windows-host", "clang", "make", "relwithdebinfo"]}
+    ],
+    "buildPresets":
+    [
+        {"name":"windows-x86-msvc2022-vs2022-debug",          "displayName":"Debug",          "configuration":"Debug",          "configurePreset":"windows-x86-msvc2022-vs2022"},
+        {"name":"windows-x86-msvc2022-vs2022-relwithdebinfo", "displayName":"RelWithDebInfo", "configuration":"RelWithDebInfo", "configurePreset":"windows-x86-msvc2022-vs2022"},
+
+        {"name":"windows-x64-msvc2022-vs2022-debug",          "displayName":"Debug",          "configuration":"Debug",          "configurePreset":"windows-x64-msvc2022-vs2022"},
+        {"name":"windows-x64-msvc2022-vs2022-relwithdebinfo", "displayName":"RelWithDebInfo", "configuration":"RelWithDebInfo", "configurePreset":"windows-x64-msvc2022-vs2022"},
+
+        {"name":"windows-x86-clang-vs2022-debug",             "displayName":"Debug",          "configuration":"Debug",          "configurePreset":"windows-x86-clang-vs2022"},
+        {"name":"windows-x86-clang-vs2022-relwithdebinfo",    "displayName":"RelWithDebInfo", "configuration":"RelWithDebInfo", "configurePreset":"windows-x86-clang-vs2022"},
+
+        {"name":"windows-x64-clang-vs2022-debug",             "displayName":"Debug",          "configuration":"Debug",          "configurePreset":"windows-x64-clang-vs2022"},
+        {"name":"windows-x64-clang-vs2022-relwithdebinfo",    "displayName":"RelWithDebInfo", "configuration":"RelWithDebInfo", "configurePreset":"windows-x64-clang-vs2022"},
+
+        {"name":"gcc-ninja-debug",                            "displayName":"Debug",          "configuration":"Debug",          "configurePreset":"gcc-ninja"},
+        {"name":"gcc-ninja-relwithdebinfo",                   "displayName":"RelWithDebInfo", "configuration":"RelWithDebInfo", "configurePreset":"gcc-ninja"},
+
+        {"name":"gcc-make-debug",                             "displayName":"Debug",          "configurePreset":"gcc-make-debug"},
+        {"name":"gcc-make-relwithdebinfo",                    "displayName":"RelWithDebInfo", "configurePreset":"gcc-make-relwithdebinfo"},
+
+        {"name":"clang-ninja-debug",                          "displayName":"Debug",          "configuration":"Debug",          "configurePreset":"clang-ninja"},
+        {"name":"clang-ninja-relwithdebinfo",                 "displayName":"RelWithDebInfo", "configuration":"RelWithDebInfo", "configurePreset":"clang-ninja"},
+
+        {"name":"clang-make-debug",                           "displayName":"Debug",          "configurePreset":"gcc-make-debug"},
+        {"name":"clang-make-relwithdebinfo",                  "displayName":"RelWithDebInfo", "configurePreset":"gcc-make-relwithdebinfo"}
+    ]
+}
