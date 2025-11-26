@@ -10,6 +10,7 @@ void Initialize(size_t thread_count)
 {
     UNUSED_PARAM(thread_count);
     std::cout << "Initialising thread mail boxes" << std::endl;
+
     // while (thread_count --> 0)
     // {
     //     thread_mailboxes.at(thread_count).push(Message());
@@ -23,40 +24,68 @@ void Cleanup()
 
 /**
  * @brief
+ * This function is used to either receive a message directly from the handler or to redirect it to the target thread in a thread-safe way
+ * 
+ * @param thread_index the index of the current thread
+ * @param message_handler the message handler of the current thread
+ */
+void HandleMessageFromHandler(size_t thread_index, MessageHandler& message_handler)
+{
+    std::optional<Message> curr_message = message_handler.GetMessageToSend();
+    if (curr_message.has_value())
+    {
+        if (curr_message.value().target_thread_index  == thread_index)
+        {
+            message_handler.ReceivedMessage(curr_message.value().message_data);
+        }
+        else
+        { //! A lock guard mutex is used to place a lock on the mutex, it will be released by exciting the else block
+            std::lock_guard lock(thread_mailboxes.at(curr_message.value().target_thread_index).idle_mu);
+
+            thread_mailboxes.at(curr_message.value().target_thread_index).mail.push(
+                curr_message.value()
+            );
+            thread_mailboxes.at(curr_message.value().target_thread_index).cv.notify_one();
+        } //! The lock on the idle mutex is released and the thread concerned will be unblocked
+    }
+}
+
+/**
+ * @brief
+ * This function is used to receive a message from another thread that notified us on our threads idle condition_variable
+ * 
+ * @param thread_index the index of the current thread
+ * @param message_handler the message handler of the current thread
+ */
+void HandleMessageFromThreads(size_t thread_index, MessageHandler& message_handler)
+{
+    //TODO implement
+    UNUSED_PARAM(thread_index);
+    UNUSED_PARAM(message_handler);
+}
+
+/**
+ * @brief
  * This function is called once for each thread. This is where you need to write the main loop for each of the threads.
  * 
  * @param thread_index the index of the current thread
  * @param message_handler the message handler of the current thread
  */
 void HandleMessages(size_t thread_index, MessageHandler& message_handler)
-{   
-    /* pseudo-code phase
-    while (message_handler.HasMessageToSend()) // Work until there is no work !
+{
+    MailBox &mb = thread_mailboxes.at(thread_index);
+    while (!work_done.test())
     {
-        
-        if (mutex.try_lock())
+        while (message_handler.HasMessageToSend())
         {
-            std::optional<Message> message = message_handler.GetMessageToSend();
-            if (it is my message)
-            {
-                message_handler.ReceivedMessage(message.value())
-            }
-            else
-            {
-                pass it to the identified thread queue
-            }
-            mutex.unlock()
-            // Check if the message we got concerns our thread
+            HandleMessageFromHandler(thread_index, message_handler);
         }
-        else // This means another thread got the message
-        {
-            // Wait until another thread passes the message onto us
-        }
-    }
-    */
+                
+        HandleMessageFromThreads(thread_index, message_handler);
 
-    UNUSED_PARAM(thread_index);
-    UNUSED_PARAM(message_handler);
+        std::unique_lock lock(mb.idle_mu);
+        mb.cv.wait(lock);
+    }
 }
 
 } // namespace REC2659
