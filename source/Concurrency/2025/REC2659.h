@@ -11,7 +11,6 @@
 namespace REC2659
 {
 // Multiple messages could be addressed to the same tread, hence the use of a queue
-// static std::vector<std::queue<Message>> thread_mailboxes;
 struct MailBox
 {
     std::condition_variable cv;
@@ -20,7 +19,7 @@ struct MailBox
     std::queue<Message> mail;
 };
 static std::unordered_map<size_t, MailBox> thread_mailboxes;
-static std::atomic_flag work_done;
+static std::atomic_flag work_done{};
 
 void Initialize(size_t thread_count);
 void Cleanup();

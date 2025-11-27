@@ -8,14 +8,16 @@ namespace REC2659
 
 void Initialize(size_t thread_count)
 {
-    UNUSED_PARAM(thread_count);
     std::cout << "Initialising thread mail boxes" << std::endl;
-
-    // while (thread_count --> 0)
-    // {
-    //     thread_mailboxes.at(thread_count).push(Message());
-    //     std::cout << "Pushed messqge on queue of thread[" << thread_count << "]" << std::endl;
-    // }
+    for (size_t thread_id = 0; thread_id < thread_count; thread_id++)
+    {
+        thread_mailboxes.try_emplace(thread_id); //* Mutexes can't be moved so they need to be built in place
+    }
+    if (thread_mailboxes.size() != thread_count)
+    {
+        //TODO Handle error if a MailBox couldn't be emplaced
+    }
+    work_done.clear(); //* Sets the loop flag to false
 }
 
 void Cleanup()
