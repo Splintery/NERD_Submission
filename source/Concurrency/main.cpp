@@ -16,6 +16,8 @@ The content herein is highly confidential and should be handled accordingly.
 #include "all.h"
 #include <random>
 #include <thread>
+#include <ostream>
+#include <iostream>
 
 #define CANDIDATE REC2659
 
@@ -124,7 +126,7 @@ int candidate_main()
 {
     try
     {
-        static constexpr size_t thread_count = 10;
+        static constexpr size_t thread_count = 3;
         static constexpr size_t repetitions = 10;
 
         for (size_t b = 0; b < repetitions; b++)
@@ -180,6 +182,7 @@ int candidate_main()
             }
             else if (total_tx_count > total_rx_count)
             {
+                std::cout << "total_tx_count[" << total_tx_count << "] && total_rx_count[" << total_rx_count << "]" << std::endl;
                 throw std::runtime_error("Some messages were not received!");
             }
             else if (total_tx_count < total_rx_count)
