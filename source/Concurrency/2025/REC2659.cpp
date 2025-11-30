@@ -22,7 +22,10 @@ void Initialize(size_t thread_count)
 
 void Cleanup()
 {
-    // Nothing was allocated Dynamically by Initialize
+    std::cout << "Cleaning up" << std::endl;
+    work_done.store(false);
+    idle_threads.store(0);
+    message_in_flight.store(0);
 }
 
 void SignalAll()
@@ -50,7 +53,7 @@ void HandleMessageFromHandler(size_t thread_index, MessageHandler& message_handl
 
     if (m.target_thread_index == thread_index)
     {
-        std::cout << "Thread[" << thread_index << "] is receiving a message by its handler" << std::endl;
+        // std::cout << "Thread[" << thread_index << "] is receiving a message by its handler" << std::endl;
         message_handler.ReceivedMessage(m.message_data);
         return;
     }
@@ -63,7 +66,7 @@ void HandleMessageFromHandler(size_t thread_index, MessageHandler& message_handl
 
         std::lock_guard lock(target_mb.idle_thread_mu);
 
-        std::cout << "Thread[" << thread_index << "] is sending a message to " << m.target_thread_index << std::endl;
+        // std::cout << "Thread[" << thread_index << "] is sending a message to " << m.target_thread_index << std::endl;
         target_mb.mail.push(std::move(m));
         target_mb.cv.notify_one();
     } //! The lock on the idle mutex is released and the thread concerned will be unblocked
@@ -85,7 +88,7 @@ void HandleMessagesFromThreads(size_t thread_index, MessageHandler& message_hand
 
         if (received_message.target_thread_index == thread_index) // Simple paranoia
         {
-            std::cout << "Thread[" << thread_index << "] is receiving a message from another thread" << std::endl;
+            // std::cout << "Thread[" << thread_index << "] is receiving a message from another thread" << std::endl;
             message_handler.ReceivedMessage(received_message.message_data);
         }
         
@@ -152,14 +155,14 @@ void HandleMessages(size_t thread_index, MessageHandler& message_handler)
             }
             else
             {
-                std::cout << "Going to sleep[" << thread_index << "]" << std::endl;
+                // std::cout << "Going to sleep[" << thread_index << "]" << std::endl;
 
                 mb.cv.wait(lock, [&]{
                     return work_done.load(std::memory_order_acquire) || !mb.mail.empty();
                 });//! releases the lock while waiting, lock is placed when woken up
                 
                 idle_threads.fetch_sub(1, std::memory_order_acq_rel);
-                std::cout << "Waking up[" << thread_index << "]" << std::endl;
+                // std::cout << "Waking up[" << thread_index << "]" << std::endl;
 
                 if (work_done.load(std::memory_order_acquire))
                 {

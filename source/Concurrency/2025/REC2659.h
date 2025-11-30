@@ -29,7 +29,6 @@ enum ThreadState
     REDIRECTING,
     ACCEPTING,
     WAITING,
-    WAKING_UP,
     FINISHED
 };
 
