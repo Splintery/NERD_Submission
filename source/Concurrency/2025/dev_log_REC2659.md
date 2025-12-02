@@ -1,8 +1,17 @@
-## Overview/Main idea
+# Overview/Main idea
 
 When I first started to think about a solution I wanted to avoid any major bottlenecks.
 That is why each thread has its own MailBox object where it pulls messages sent by other threads.
 My goal zas to keep as much work done in parallel as possible, so as long as 2 distinct threads do not try to acces one specific queue there is no need to block execution.
+
+## Program structure
+When tackling with thread synchronisation I am used to drawing on paper a [petri net](https://fr.wikipedia.org/wiki/R%C3%A9seau_de_Petri). It allows to isolate the differents task a thread has into states:
+* Redirecting
+* Accepting
+* Waiting
+* Finished
+
+The role of the Petri net is to make it clear how a thread can go from one state to another. I uploaded my drawing as petri_net_REC2659.png.
 
 ## Big problem and my struggles
 The harder part of this exercise was figuring out when should one thread stop.
