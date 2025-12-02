@@ -44,6 +44,10 @@ struct float2
     {
         return float(sqrt(pow(other.x - x, 2) + pow(other.y - y, 2))); 
     }
+    bool operator==(float2 const& other) const 
+    {
+        return (x == other.x && y== other.y);
+    }
 };
 
 static std::ostream& operator<<(std::ostream &os, float2 const &point)                                                                                  //for struct output
@@ -52,20 +56,46 @@ static std::ostream& operator<<(std::ostream &os, float2 const &point)          
     return os;
 }
 
-struct TrianglePos
+struct Edge
 {
-    int a, b, c; // Indices in the vector of float2 given
+    float2* u;
+    float2* v;
+    Edge(float2* u, float2* v)
+    {
+        this->u = u;
+        this->v = v;
+    }
+    bool operator==(Edge const& other) const 
+    {
+        return (u == other.u && v == other.v) || (u == other.v && v == other.u);
+    }
+    bool equal(const float2 &p, const float2 &q) const 
+    {
+        return (p == *u && q == *v) || (p == *v && q == *u);
+    }
 };
+
 struct Triangle
 {
-    float2 a, b, c;
+    float2* vertices[3];
+    Triangle* neighbours[3];
+    bool containsEdge(const Edge &edge)
+    {
+        return edge.equal(*vertices[0], *vertices[1])
+        || edge.equal(*vertices[1], *vertices[2]) 
+        || edge.equal(*vertices[2], *vertices[0]);
+    }
+    bool contains(const float2 &point)
+    {
+        return *vertices[0] == point || *vertices[1] == point || *vertices[2] == point;
+    }
 };
 static std::ostream& operator<<(std::ostream &os, Triangle const &t)                                                                                  //for struct output
 {
     os << "Triangle {" << std::endl
-    << t.a << std::endl
-    << t.b << std::endl
-    << t.c << std::endl
+    << t.vertices[0] << std::endl
+    << t.vertices[1] << std::endl
+    << t.vertices[2] << std::endl
     << "}" << std::endl;
     return os;
 };
@@ -84,22 +114,12 @@ static std::ostream& operator<<(std::ostream &os, Circle const &cc)             
     return os;
 }
 
-struct Edge
-{
-    int u, v; // Indices in the starsystem
-    bool operator==(Edge const& other) const 
-    {
-        return (u == other.u && v== other.v) || (u == other.v && v == other.u);
-    }
-};
-
 float2 FindPointOnBisection(const float2 &a, const float2 &b, const float2 &mid);
 float2 FindLineLineIntersection(float2 p1, float2 p2, float2 p3, float2 p4);
-Circle ComputeCircumCircle(const float2& a, const float2 &b, const float2 &c);
+Circle ComputeCircumCircle(Triangle *t);
 
-Triangle equilateralTriangleFromIncircle(Circle cc);
+Triangle* equilateralTriangleFromIncircle(Circle cc);
 
-std::vector<TrianglePos> BowyerWatsonDelaunayTriangulation(std::vector<float2> const& starSystem);
 
 void GlobalInit();
 void GlobalTeardown();
