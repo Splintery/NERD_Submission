@@ -5,17 +5,26 @@
 * The smallest distance would then be the longest edge in the MST
 
 ## Non trivial subproblem
-Wandering wich algorithm I could use to compute the MST (https://en.wikipedia.org/wiki/Minimum_spanning_tree) I realised that the operation complexicty of these algorithms are expressed in terms of vertexes AND edges making it impossible as it is to be under O(**n**²). With a complete graph of **n** vertexes and **m** the number of edges to lookup, **m** is equal to (**n** - 1) * **n**, so more or less allready O(**n**²).
+Wandering wich algorithm I could use to compute the [MST](https://en.wikipedia.org/wiki/Minimum_spanning_tree) I realised that the operation complexicty of these algorithms are expressed in terms of vertexes AND edges making it impossible as it is to be under O(**n**²). With a complete graph of **n** vertexes and **m** the number of edges to lookup, **m** is equal to (**n** - 1) * **n**, so more or less allready O(**n**²).
 
 # My solutions (good and bad)
 
 I need to prune the edge of the graph. Find a way to simplify it.
 ## Bad solution n°1
-* I first thaught of turning the 2D space into a 1D problem.
+* I first thaught of flattening the 2D space into a 1D problem.
 * I would have a tree like structure holding circles centered on the middle of the solar system.
 Whenever a new star is inserted into the tree it would create a circle with radius == distance between point and middle of solarsystem.
 * The Minimum D would be found between the largest difference of radius between 2 consecutive circles.
 I didn't stick with this solution because I can't assume that there are enough stars on each circle to use this method. They could be very poorly distributed.
 
-## Good solution n°2
-* In my second year of Bachelors degree I studied Quadtree to optimise the GameOfLife
+## Ok solution n°2
+* In my second year of Bachelors degree I studied Quadtrees to optimise the GameOfLife
+* Building a quad tree can be done efficiently if the stars aren't all aligned in a line (would result in a tree of height n)
+* The quad tree could then be used to query the "best" neighbours of each star
+* Harder to prove that the graph stays connected
+
+## Good solution n°3
+* I got another idea based on the strongest structure known, the triangle. Last year when I worked on implementing a scheduler to coordinate multiple threads, I discorvered [Gueorgui Voronoï](https://fr.wikipedia.org/wiki/Gueorgui_Vorono%C3%AF) and his [diagram](https://fr.wikipedia.org/wiki/Diagramme_de_Vorono%C3%AF). The interresting fact I remembered was the link between a Voronoï diagram and a Delaunay [Triangulation](https://fr.wikipedia.org/wiki/Triangulation_de_Delaunay).
+* To build a Delaunay Triangulation incrementaly whener testing a triangle I need to keep only the edges that build triangles whom circumcircle doesn't contain any other star.
+* The result is a connected graph with 3n edges at most thanks to the triangle arrangement
+
