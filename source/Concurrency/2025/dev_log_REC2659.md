@@ -11,7 +11,7 @@ When tackling with thread synchronisation I am used to drawing on paper a [petri
 * Waiting
 * Finished
 
-The role of the Petri net is to make it clear how a thread can go from one state to another. I uploaded my drawing as petri_net_REC2659.png.
+The role of the Petri net is to make it clear how a thread can go from one state to another. I uploaded my drawing as petri_net_REC2659.jpg.
 
 ## Big problem and my struggles
 The harder part of this exercise was figuring out when should one thread stop.
