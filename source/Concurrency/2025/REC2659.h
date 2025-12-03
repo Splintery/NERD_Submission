@@ -1,7 +1,7 @@
 #ifndef REC2659_H
 #define REC2659_H
 #include "context.h"
-#include <queue>
+#include <deque>
 #include <unordered_map>
 #include <condition_variable>
 #include <mutex>
@@ -15,7 +15,7 @@ struct MailBox
 {
     std::condition_variable cv;
     std::mutex idle_thread_mu;
-    std::queue<Message> mail;
+    std::deque<Message> mail;
 };
 static std::unordered_map<size_t, MailBox> thread_mailboxes;
 static std::atomic<bool> work_done{false};

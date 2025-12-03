@@ -63,12 +63,6 @@ int _tmain(int argc, TCHAR* argv[])
         // Perform runs
 #ifdef DEBUG
         const unsigned runs = 1;
-        starSystem.clear();
-        starSystem.push_back({-5, 4}); // A
-        starSystem.push_back({4, 3});  // B
-        starSystem.push_back({7, -4});  // C
-        starSystem.push_back({1, -2}); // D
-        std::cout << "Overwrote starsystem for testing..." << std::endl;
 #else
         const unsigned runs = 5;
         printf("Performing %u runs...\n", runs);

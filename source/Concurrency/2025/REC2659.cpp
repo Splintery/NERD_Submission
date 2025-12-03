@@ -67,7 +67,7 @@ void HandleMessageFromHandler(size_t thread_index, MessageHandler& message_handl
         std::lock_guard lock(target_mb.idle_thread_mu);
 
         // std::cout << "Thread[" << thread_index << "] is sending a message to " << m.target_thread_index << std::endl;
-        target_mb.mail.push(std::move(m));
+        target_mb.mail.push_back(std::move(m));
         target_mb.cv.notify_one();
     } //! The lock on the idle mutex is released and the thread concerned will be unblocked
 }
@@ -84,7 +84,7 @@ void HandleMessagesFromThreads(size_t thread_index, MessageHandler& message_hand
     while (!mailbox.mail.empty())
     {
         Message received_message = std::move(mailbox.mail.front());
-        mailbox.mail.pop();
+        mailbox.mail.pop_front();
 
         if (received_message.target_thread_index == thread_index) // Simple paranoia
         {

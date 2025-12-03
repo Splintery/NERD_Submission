@@ -2,7 +2,7 @@
 
 When I first started to think about a solution I wanted to avoid any major bottlenecks.
 That is why each thread has its own MailBox object where it pulls messages sent by other threads.
-My goal zas to keep as much work done in parallel as possible, so as long as 2 distinct threads do not try to acces one specific queue there is no need to block execution.
+My goal zas to keep as much work done in parallel as possible, so as long as 2 distinct threads do not try to acces one specific queue there is no need to block execution. I chose to use the [deque](https://en.cppreference.com/w/cpp/container/deque.html) structure to store the pending messages. Random acces to an element and insertion/removal at the front/back is done in O(1). I chose to add new messages at the back and to read them from the front (behaves like a queue).
 
 ## Program structure
 When tackling with thread synchronisation I am used to drawing on paper a [petri net](https://fr.wikipedia.org/wiki/R%C3%A9seau_de_Petri). It allows to isolate the differents task a thread has into states:
