@@ -39,28 +39,28 @@ float2 FindLineLineIntersection(float2 p1, float2 p2, float2 p3, float2 p4)
     return float2(pX, pY);
 }
 
-Triangle* equilateralTriangleFromIncircle(Circle cc)
+Triangle equilateralTriangleFromIncircle(Circle cc)
 {
     // Distance from center of cercle to vertexes of triangle
     double R = (2.0f * cc.radius) / std::sqrt(3.0f);
 
     // Fixed Angles : 0°, 120°, 240°
-    Triangle *t = new Triangle();
-    t->vertices[0] = new float2((float)(cc.center.x + R * std::cos(0.0f)), (float)(cc.center.y + R * std::sin(0.0f)));
-    t->vertices[1] = new float2((float)(cc.center.x + R * std::cos(2.0f * M_PI / 3.0f)), (float)(cc.center.y + R * std::sin(2.0f * M_PI / 3.0f)));
-    t->vertices[2] = new float2((float)(cc.center.x + R * std::cos(4.0f * M_PI / 3.0f)), (float)(cc.center.y + R * std::sin(4.0f * M_PI / 3.0f)));
+    Triangle t = Triangle();
+    t.vertices[0] = float2((float)(cc.center.x + R * std::cos(0.0f)), (float)(cc.center.y + R * std::sin(0.0f)));
+    t.vertices[1] = float2((float)(cc.center.x + R * std::cos(2.0f * M_PI / 3.0f)), (float)(cc.center.y + R * std::sin(2.0f * M_PI / 3.0f)));
+    t.vertices[2] = float2((float)(cc.center.x + R * std::cos(4.0f * M_PI / 3.0f)), (float)(cc.center.y + R * std::sin(4.0f * M_PI / 3.0f)));
 
     return t;
 }
 
-Circle ComputeCircumCircle(Triangle* t)
+Circle ComputeCircumCircle(Triangle t)
 {
-    float2 bc_mid((t->vertices[1]->x + t->vertices[2]->x) / 2.0f, (t->vertices[1]->y + t->vertices[2]->y) / 2.0f);
-    float2 ab_mid((t->vertices[0]->x + t->vertices[1]->x) / 2.0f, (t->vertices[0]->y + t->vertices[1]->y) / 2.0f);
+    float2 bc_mid((t.vertices[1].x + t.vertices[2].x) / 2.0f, (t.vertices[1].y + t.vertices[2].y) / 2.0f);
+    float2 ab_mid((t.vertices[0].x + t.vertices[1].x) / 2.0f, (t.vertices[0].y + t.vertices[1].y) / 2.0f);
 
 
-    float2 bc_bisec = FindPointOnBisection(*t->vertices[1], *t->vertices[2], bc_mid);
-    float2 ab_bisec = FindPointOnBisection(*t->vertices[0], *t->vertices[1], ab_mid);
+    float2 bc_bisec = FindPointOnBisection(t.vertices[1], t.vertices[2], bc_mid);
+    float2 ab_bisec = FindPointOnBisection(t.vertices[0], t.vertices[1], ab_mid);
 
     // std::cout << "Line[bc] " << b << "|" << c << "-mid->" << bc_mid <<std::endl;
     // std::cout << "bc_bisec: " << bc_bisec << std::endl;
@@ -69,7 +69,7 @@ Circle ComputeCircumCircle(Triangle* t)
 
 
     float2 center_cc = FindLineLineIntersection(bc_mid, bc_bisec, ab_mid, ab_bisec);
-    return Circle(center_cc, center_cc.distance(*t->vertices[0]));
+    return Circle(center_cc, center_cc.distance(t.vertices[0]));
 }
 
 Triangle* WalkToContainingTriangle(std::vector<Triangle*> &triangulation, float2 p)
@@ -77,7 +77,7 @@ Triangle* WalkToContainingTriangle(std::vector<Triangle*> &triangulation, float2
     return nullptr;
 }
 
-std::vector<Triangle*> BowyerWatson(std::vector<float2> const &starSystem)
+std::vector<Triangle> BowyerWatson(std::vector<float2> const &starSystem)
 {
     // Init super triangle
     float minX = starSystem[0].x;
@@ -98,25 +98,27 @@ std::vector<Triangle*> BowyerWatson(std::vector<float2> const &starSystem)
     float dy = maxY - minY; // The hight of the solar system
 
     float diameter = std::max(dx, dy) * 2.0f;
-    Triangle *superT = equilateralTriangleFromIncircle(Circle({dx / 2.0f, dy / 2.0f}, diameter));
+    Triangle superT = equilateralTriangleFromIncircle(Circle({dx / 2.0f, dy / 2.0f}, diameter));
+    std::cout << "Super Triangle is: " << superT << std::endl;
 
-    superT->neighbours[0] = superT->neighbours[1] = superT->neighbours[2] = nullptr;
-    std::vector<Triangle*> triangulation = {superT};
+    std::vector<Triangle> triangulation = {superT};
 
     // Step 2 insert the point 1 by 1
     for (float2 p : starSystem)
     {
-        std::vector<Triangle*> badTriangles;
-        for (Triangle *t : triangulation)
+        std::cout << "working on point: " << p << std::endl;
+        std::vector<Triangle> badTriangles;
+        for (Triangle t : triangulation)
         {
             Circle cc = ComputeCircumCircle(t);
             if (p.distance(cc.center) < cc.radius)
             {
+                std::cout << "added this triangle to bad triangles: " << t << std::endl;
                 badTriangles.push_back(t);
             }
         }
 
-        std::vector<Edge*> polygon;
+        std::vector<Edge> polygon;
         /*
         for each triangle in badTriangles do // find the boundary of the polygonal hole
             for each edge in triangle do
@@ -126,65 +128,113 @@ std::vector<Triangle*> BowyerWatson(std::vector<float2> const &starSystem)
         for (size_t i = 0; i < badTriangles.size(); i++)
         {
             // Triangle ABC with A = 0, B = 1 & C = 2 in vertices[]
-            Edge *ab = new Edge(badTriangles.at(i)->vertices[0], badTriangles.at(i)->vertices[1]);
-            Edge *bc = new Edge(badTriangles.at(i)->vertices[1], badTriangles.at(i)->vertices[2]);
-            Edge *ca = new Edge(badTriangles.at(i)->vertices[2], badTriangles.at(i)->vertices[0]);
-            bool ab_shared, bc_shared, ca_shared = false;
+            Edge ab = Edge(badTriangles.at(i).vertices[0], badTriangles.at(i).vertices[1]);
+            Edge bc = Edge(badTriangles.at(i).vertices[1], badTriangles.at(i).vertices[2]);
+            Edge ca = Edge(badTriangles.at(i).vertices[2], badTriangles.at(i).vertices[0]);
+            bool ab_shared = false;
+            bool bc_shared = false;
+            bool ca_shared = false;
+
+            std::cout << "Bad triangle made of the follozing edges: " << ab << " & " << bc << " & " << ca << std::endl;
+            printf("Booleans state: ab(%b), bc(%b), ca(%b)\n", ab_shared, bc_shared, ca_shared);
 
             for (size_t j = 0; j < badTriangles.size(); j++)
             {
-                if (i == j) continue;
-                // Triangle DEF with D = 0, E = 1 & F = 2 in vertices[]
-                Edge de(badTriangles.at(j)->vertices[0], badTriangles.at(j)->vertices[1]);
-                Edge ef(badTriangles.at(j)->vertices[1], badTriangles.at(j)->vertices[2]);
-                Edge fd(badTriangles.at(j)->vertices[2], badTriangles.at(j)->vertices[0]);
+                std::cout << "test5" << std::endl;
 
-                if (*ab == de || *ab == ef || *ab == fd) ab_shared = true;
-                if (*bc == de || *bc == ef || *bc == fd) bc_shared = true;
-                if (*ca == de || *ca == ef || *ca == fd) ca_shared = true;
+                if (i != j) 
+                {
+                    // Triangle DEF with D = 0, E = 1 & F = 2 in vertices[]
+                    Edge de(badTriangles.at(j).vertices[0], badTriangles.at(j).vertices[1]);
+                    Edge ef(badTriangles.at(j).vertices[1], badTriangles.at(j).vertices[2]);
+                    Edge fd(badTriangles.at(j).vertices[2], badTriangles.at(j).vertices[0]);
+                    std::cout << "test3" << std::endl;
+
+                    if (ab == de || ab == ef || ab == fd) ab_shared = true;
+                    if (bc == de || bc == ef || bc == fd) bc_shared = true;
+                    if (ca == de || ca == ef || ca == fd) ca_shared = true;
+                }
+                std::cout << "test6" << std::endl;
+                
+                std::cout << "test4" << std::endl;
+
             }
+            printf("Booleans state: ab(%b), bc(%b), ca(%b)\n", ab_shared, bc_shared, ca_shared);
 
             if (!ab_shared) polygon.push_back(ab);
-            else delete ab;
-
             if (!bc_shared) polygon.push_back(bc);
-            else delete bc;
-
             if (!ca_shared) polygon.push_back(ca);
-            else delete ca;
         }
+        std::cout << "test7" << std::endl;
 
-        for (std::vector<Triangle*>::iterator it = triangulation.begin(); it != triangulation.end(); it++)
+        for (std::vector<Triangle>::iterator it = triangulation.begin(); it != triangulation.end();)
         {
-            for (Triangle *bt : badTriangles)
+            if (std::find(badTriangles.begin(), badTriangles.end(), *it) != badTriangles.end())
             {
-                if (*it == bt) triangulation.erase(it);
+                it = triangulation.erase(it);
+            }
+            else
+            {
+                it++;
             }
         }
 
+        std::cout << "test8" << std::endl;
+
         // re-triangulate the polygonal hole
-        for (Edge *e : polygon)
+        for (Edge e : polygon)
         {
-            Triangle *newTri = new Triangle();
-            newTri->vertices[0] = new float2(p);
-            newTri->vertices[1] = e->u;
-            newTri->vertices[2] = e->v;
+            Triangle newTri = Triangle();
+            newTri.vertices[0] = p;
+            newTri.vertices[1] = e.u;
+            newTri.vertices[2] = e.v;
             triangulation.push_back(newTri);
         }   
+        std::cout << "test9" << std::endl;
     }
     /*
     for each triangle in triangulation // done inserting points, now clean up
         if triangle contains a vertex from original super-triangle
             remove triangle from triangulation
     */
-    for (std::vector<Triangle*>::iterator it = triangulation.begin(); it != triangulation.end(); it++)
+    for (std::vector<Triangle>::iterator it = triangulation.begin(); it != triangulation.end();)
     {
-        if ((*it)->contains(*superT->vertices[0]) || (*it)->contains(*superT->vertices[0]) || (*it)->contains(*superT->vertices[0]))
+        if (it->contains(superT.vertices[0]) || it->contains(superT.vertices[1]) || it->contains(superT.vertices[2]))
         {
-            triangulation.erase(it);
+            it = triangulation.erase(it);
+        }
+        else
+        {
+            it++;
         }
     }
     return triangulation;
+}
+
+float Graph::kruskalMST()
+{
+    float longuest_edge = 0;
+    std::sort(this->edges.begin(), this->edges.end());
+
+    DisjointSets ds(this->V);
+
+    for (std::vector<Edge>::iterator it = this->edges.begin(); it != this->edges.end(); it++)
+    {
+
+        int id_u = getId(it->u);
+        int id_v = getId(it->v);
+
+        int set_u = ds.find(id_u);
+        int set_v = ds.find(id_v);
+
+        if (set_u != set_v)
+        {
+            longuest_edge = std::max(longuest_edge, it->length());
+            std::cout << *it << " length: " << it->length() << std::endl;
+            ds.merge(set_u, set_v);
+        }
+    }
+    return longuest_edge;
 }
 
 float FindTheLowestDInTheStarSystem(std::vector<float2> const &starSystem)
@@ -195,17 +245,24 @@ float FindTheLowestDInTheStarSystem(std::vector<float2> const &starSystem)
     // float2 c{1, -2};
     // std::cout << "Test cc " << ComputeCircumCircle(b, c, a) << std::endl;
 
-    // std::vector<TrianglePos> delaunayTriangulation = BowyerWatsonDelaunayTriangulation(starSystem);
-    // std::cout << delaunayTriangulation.size() << std::endl;
+    std::cout << "test1" << std::endl;
+    std::vector<Triangle> dt = BowyerWatson(starSystem);
+    std::cout << "test2" << std::endl;
+    
 
-    // for (TrianglePos t : delaunayTriangulation)
-    // {
-    //     std::cout << "First triangle has points{" << std::endl;
-    //     std::cout << starSystem[t.a] << std::endl;
-    //     std::cout << starSystem[t.b] << std::endl;
-    //     std::cout << starSystem[t.c] << std::endl << "}";
-    // }
-    return 0;
+    Graph reduced_graph = Graph();
+    reduced_graph.setV(starSystem.size());
+
+    int E = 0;
+    for (Triangle t : dt)
+    {
+        reduced_graph.addEdge(t);
+        std::cout << t << std::endl;
+        E++;
+    }
+    reduced_graph.setE(E);
+
+    return reduced_graph.kruskalMST();
 }
 
 } // namespace REC2659

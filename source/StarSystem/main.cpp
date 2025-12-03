@@ -66,7 +66,7 @@ int _tmain(int argc, TCHAR* argv[])
         starSystem.clear();
         starSystem.push_back({-5, 4}); // A
         starSystem.push_back({4, 3});  // B
-        starSystem.push_back({7, 4});  // C
+        starSystem.push_back({7, -4});  // C
         starSystem.push_back({1, -2}); // D
         std::cout << "Overwrote starsystem for testing..." << std::endl;
 #else
