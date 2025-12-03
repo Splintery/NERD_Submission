@@ -120,25 +120,17 @@ std::vector<Triangle> BowyerWatson(std::vector<float2> const &starSystem)
         */
         for (size_t i = 0; i < badTriangles.size(); i++)
         {
-            // Triangle ABC with A = 0, B = 1 & C = 2 in vertices[]
-            // Edge ab = Edge(badTriangles.at(i).vertices[0], badTriangles.at(i).vertices[1]);
-            // Edge bc = Edge(badTriangles.at(i).vertices[1], badTriangles.at(i).vertices[2]);
-            // Edge ca = Edge(badTriangles.at(i).vertices[2], badTriangles.at(i).vertices[0]);
+            // Triangle ABC with AB = 0, BC = 1, CA = 2 in tuple
             std::tuple<Edge, Edge, Edge> edges = badTriangles.at(i).getEdges(); 
             std::tuple<bool, bool, bool> edge_shared = std::make_tuple(false, false, false);
-            // bool ab_shared = false;
-            // bool bc_shared = false;
-            // bool ca_shared = false;
+
 
             for (size_t j = 0; j < badTriangles.size(); j++)
             {
                 if (i != j) 
                 {
-                    // Triangle DEF with D = 0, E = 1 & F = 2 in vertices[]
+                    // Triangle DEF with DE = 0, EF = 1, FD = 2 in tuple
                     std::tuple<Edge, Edge, Edge> compared_edge = badTriangles.at(j).getEdges(); 
-                    // Edge de(badTriangles.at(j).vertices[0], badTriangles.at(j).vertices[1]);
-                    // Edge ef(badTriangles.at(j).vertices[1], badTriangles.at(j).vertices[2]);
-                    // Edge fd(badTriangles.at(j).vertices[2], badTriangles.at(j).vertices[0]);
 
                     if (std::get<0>(edges) == std::get<0>(compared_edge)
                     || std::get<0>(edges) == std::get<1>(compared_edge)
@@ -226,7 +218,6 @@ float Graph::kruskalMST()
         if (set_u != set_v)
         {
             longuest_edge = std::max(longuest_edge, it->length());
-            std::cout << *it << " length: " << it->length() << std::endl;
             ds.merge(set_u, set_v);
         }
     }
