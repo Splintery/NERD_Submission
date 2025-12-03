@@ -126,8 +126,8 @@ int candidate_main()
 {
     try
     {
-        static constexpr size_t thread_count = 3;
-        static constexpr size_t repetitions = 10;
+        static constexpr size_t thread_count = 10000;
+        static constexpr size_t repetitions = 1;
 
         for (size_t b = 0; b < repetitions; b++)
         {

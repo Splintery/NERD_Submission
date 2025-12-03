@@ -18,12 +18,14 @@ void Initialize(size_t thread_count)
     {
         //TODO Handle error if a MailBox couldn't be emplaced
     }
-    work_done.clear(); //* Sets the loop flag to false
 }
 
 void Cleanup()
 {
-    // Nothing was allocated Dynamically by Initialize
+    std::cout << "Cleaning up" << std::endl;
+    work_done.store(false);
+    idle_threads.store(0);
+    message_in_flight.store(0);
 }
 
 void SignalAll()
@@ -45,25 +47,29 @@ void SignalAll()
 void HandleMessageFromHandler(size_t thread_index, MessageHandler& message_handler, MailBox& mailbox)
 {
     std::optional<Message> curr_message = message_handler.GetMessageToSend();
-    if (curr_message.has_value())
-    {
-        if (curr_message.value().target_thread_index  == thread_index)
-        {
-            std::cout << "Thread[" << thread_index << "] is receiving a message by its handler" << std::endl;
-            message_handler.ReceivedMessage(curr_message.value().message_data);
-        }
-        else
-        { //! A lock guard mutex is used to place a lock on the mutex, it will be released by exiting the else block
-            std::lock_guard lock(thread_mailboxes.at(curr_message.value().target_thread_index).idle_thread_mu);
-            mailbox.previous_pen_pal = curr_message.value().target_thread_index;
+    if (!curr_message.has_value()) return;
 
-            std::cout << "Thread[" << thread_index << "] is sending a message to " << curr_message.value().target_thread_index << std::endl;
-            thread_mailboxes.at(curr_message.value().target_thread_index).mail.push(
-                curr_message.value()
-            );
-            thread_mailboxes.at(curr_message.value().target_thread_index).cv.notify_one();
-        } //! The lock on the idle mutex is released and the thread concerned will be unblocked
+    Message m = curr_message.value();
+
+    if (m.target_thread_index == thread_index)
+    {
+        // std::cout << "Thread[" << thread_index << "] is receiving a message by its handler" << std::endl;
+        message_handler.ReceivedMessage(m.message_data);
+        return;
     }
+
+    //? increment message_in_flight before pushing to recipients mailbox
+    message_in_flight.fetch_add(1, std::memory_order_acq_rel);
+
+    { //! A lock guard mutex is used to place a lock on the mutex, it will be released by exiting the else block
+        MailBox &target_mb = thread_mailboxes.at(m.target_thread_index);
+
+        std::lock_guard lock(target_mb.idle_thread_mu);
+
+        // std::cout << "Thread[" << thread_index << "] is sending a message to " << m.target_thread_index << std::endl;
+        target_mb.mail.push(std::move(m));
+        target_mb.cv.notify_one();
+    } //! The lock on the idle mutex is released and the thread concerned will be unblocked
 }
 
 /**
@@ -73,17 +79,21 @@ void HandleMessageFromHandler(size_t thread_index, MessageHandler& message_handl
  * @param thread_index the index of the current thread
  * @param message_handler the message handler of the current thread
  */
-void HandleMessageFromThreads(size_t thread_index, MessageHandler& message_handler, MailBox& mailbox)
+void HandleMessagesFromThreads(size_t thread_index, MessageHandler& message_handler, MailBox& mailbox)
 {
     while (!mailbox.mail.empty())
     {
-        Message received_message = mailbox.mail.front();
+        Message received_message = std::move(mailbox.mail.front());
+        mailbox.mail.pop();
+
         if (received_message.target_thread_index == thread_index) // Simple paranoia
         {
-            std::cout << "Thread[" << thread_index << "] is receiving a message from another thread" << std::endl;
+            // std::cout << "Thread[" << thread_index << "] is receiving a message from another thread" << std::endl;
             message_handler.ReceivedMessage(received_message.message_data);
         }
-        mailbox.mail.pop();
+        
+        //? One message that was previously in flight has been received
+        message_in_flight.fetch_sub(1, std::memory_order_acq_rel);
     }
 }
 
@@ -98,9 +108,9 @@ void HandleMessageFromThreads(size_t thread_index, MessageHandler& message_handl
 void HandleMessages(size_t thread_index, MessageHandler& message_handler)
 {
     MailBox &mb = thread_mailboxes.at(thread_index);
-    std::unique_lock<std::mutex> *mail_lock;
     ThreadState curr_state = REDIRECTING;
-    while (!work_done.test())
+
+    while (!work_done.load())
     {
         switch (curr_state)
         {
@@ -111,7 +121,7 @@ void HandleMessages(size_t thread_index, MessageHandler& message_handler)
             }
             else
             {
-                mail_lock = new std::unique_lock(mb.idle_thread_mu); //! tries to lock the thread mutex
+                std::unique_lock<std::mutex> lock(mb.idle_thread_mu); //! tries to lock the thread mutex
 
                 if (mb.mail.empty())
                     curr_state = WAITING;
@@ -119,59 +129,61 @@ void HandleMessages(size_t thread_index, MessageHandler& message_handler)
                     curr_state = ACCEPTING;
             }
             break;
-        case ACCEPTING: //* Lock allready aquired before enterring this state
-            HandleMessageFromThreads(thread_index, message_handler, mb);
+        case ACCEPTING:    
+        {
+            std::unique_lock<std::mutex> lock(mb.idle_thread_mu);
+            HandleMessagesFromThreads(thread_index, message_handler, mb); // Handles all messages received until now
 
-            mail_lock->unlock(); //! releases the lock on thread mutex
             curr_state = REDIRECTING; // If we accepted messages, new ones might need to be redirected
-
             break;
-        case WAITING: //* Lock allready aquired before enterring this state
-            if (mb.previous_pen_pal != (size_t) -1)
-                thread_mailboxes.at(mb.previous_pen_pal).idle_thread_mu.lock(); //! Needed to prevent race condition
-            
-            idle_couter_mutex.lock();
-            idle_counter++;
+        }
+        case WAITING:
+        {
+            std::unique_lock<std::mutex> lock(mb.idle_thread_mu);
 
-            if (mb.previous_pen_pal != (size_t) -1)
-                thread_mailboxes.at(mb.previous_pen_pal).idle_thread_mu.unlock(); //! Needed to prevent race condition
+            unsigned long prev_idle = idle_threads.fetch_add(1, std::memory_order_acq_rel);
 
-            if (idle_counter == global_thread_count) //? Check if I am the last to go to sleep
+            if ((prev_idle + 1 == global_thread_count) && (message_in_flight.load(std::memory_order_acquire) == 0)) //? Check if I am the last to go to sleep
             {
-                idle_counter--; // Only a single thread will notify the others
-                idle_couter_mutex.unlock(); // Unlock before signaling so threads can finish without having to wait that every thread is notified
-                SignalAll();
+                work_done.store(true, std::memory_order_release);
+                idle_threads.fetch_sub(1, std::memory_order_acq_rel); // Only a single thread will notify the others
 
+                // Notify all threads so they see work_done
+                SignalAll();
+                lock.unlock();
                 curr_state = FINISHED;
             }
             else
             {
-                idle_couter_mutex.unlock();
+                // std::cout << "Going to sleep[" << thread_index << "]" << std::endl;
 
-                mb.cv.wait(*mail_lock);//! releases the lock while waiting, lock is placed when woken up
-                curr_state = WAKING_UP;
+                mb.cv.wait(lock, [&]{
+                    return work_done.load(std::memory_order_acquire) || !mb.mail.empty();
+                });//! releases the lock while waiting, lock is placed when woken up
+                
+                idle_threads.fetch_sub(1, std::memory_order_acq_rel);
+                // std::cout << "Waking up[" << thread_index << "]" << std::endl;
 
-                idle_couter_mutex.lock();
-                idle_counter--;
-                idle_couter_mutex.unlock();
-
-                mail_lock->unlock(); //! Necessary to avoid a race condition
+                if (work_done.load(std::memory_order_acquire))
+                {
+                    lock.unlock();
+                    curr_state = FINISHED;
+                }
+                else if (!mb.mail.empty())
+                {
+                    lock.unlock();
+                    curr_state = ACCEPTING;
+                }
+                else // spurious wake up -> go back and check if messages need redirecting
+                {
+                    lock.unlock();
+                    curr_state = REDIRECTING;
+                }
             }
             break;
-        case WAKING_UP:
-            mail_lock->lock();
-            if (mb.mail.empty())
-            {
-                curr_state = FINISHED; //? If we got notified with no work to do, it means we are finished with working
-                mail_lock->unlock();
-            }
-            else
-            {
-                curr_state = ACCEPTING;
-            }
-            break;
+        }
         case FINISHED: //? No lock needed for this state
-            work_done.test_and_set();
+            work_done.store(true, std::memory_order_release);
             break;
         default:
             break;
