@@ -99,11 +99,18 @@ static std::ostream& operator<<(std::ostream &os, Edge const &e)                
     return os;
 };
 
+static bool pointInBox(float2 point, float2 topleft, float2 botright)
+{
+    return (topleft.x <= point.x && topleft.y >= point.y)
+    && (point.x < botright.x && point.y > botright.y);
+}
+
 struct QuadNode
 {
     
     float2 topleft, botright; // Bounding box of Node
     size_t max_capacity;
+    bool isSubdivided = false;
 
     std::vector<float2> stars;
     QuadNode *tl_child = nullptr; // TOP LEFT CHILD
@@ -114,10 +121,11 @@ struct QuadNode
     QuadNode(float2 topleft, float2 botright, size_t max_capacity): topleft(topleft), botright(botright), max_capacity(max_capacity) {}
 
     void insertStarRecurcively(float2 star);
-    std::vector<float2> getNeighboursRec(float2 star);
+    std::vector<float2> getStarsInBounds(float2 tl, float2 br);
 private:
     void subdivide();
     bool isStarInBounds(float2 star);
+    bool isColliding(float2 tl, float2 br);
 };
 
 static std::ostream& operator<<(std::ostream &os, QuadNode const &qn)                                                                                  //for struct output
@@ -142,7 +150,7 @@ struct QuadTree
         root = new QuadNode(topleft, botright, max_capacity);
     }
     void insertStar(float2 star);
-    std::vector<float2> getNeighbours(float2 star);
+    std::vector<float2> getNeighbours(float2 star, float radius);
 };
 
 

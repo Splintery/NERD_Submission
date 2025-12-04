@@ -31,7 +31,8 @@ The content herein is highly confidential and should be handled accordingly.
 #define CANDIDATE REC2659
 #endif
 
-static const size_t DEFAULT_NUMBER_STARS   = 50000;
+// static const size_t DEFAULT_NUMBER_STARS   = 50000;
+static const size_t DEFAULT_NUMBER_STARS   = 10000000;
 
 /*
  * Command line arguments:
