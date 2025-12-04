@@ -18,13 +18,19 @@ Whenever a new star is inserted into the tree it would create a circle with radi
 I didn't stick with this solution because I can't assume that there are enough stars on each circle to use this method. They could be very poorly distributed.
 
 ## Ok solution n°2
+* I got another idea based on the strongest structure known, the triangle. Last year when I worked on implementing a scheduler to coordinate multiple threads, I discorvered [Gueorgui Voronoï](https://fr.wikipedia.org/wiki/Gueorgui_Vorono%C3%AF) and his [diagram](https://fr.wikipedia.org/wiki/Diagramme_de_Vorono%C3%AF). The interresting fact I remembered was the link between a Voronoï diagram and a Delaunay [Triangulation](https://fr.wikipedia.org/wiki/Triangulation_de_Delaunay).
+* To build a Delaunay Triangulation incrementaly whener testing a triangle I need to keep only the edges that build triangles whom circumcircle doesn't contain any other star. (Computing a delaunay triangulation in O(n*log(n)) is tedious and maybe overkill for the context)
+* The result is a connected graph with 3n edges at most thanks to the triangle arrangement
+
+## Good solution n°3
 * In my second year of Bachelors degree I studied Quadtrees to optimise the GameOfLife
 * Building a quad tree can be done efficiently if the stars aren't all aligned in a line (would result in a tree of height n)
 * The quad tree could then be used to query the "best" neighbours of each star
-* Harder to prove that the graph stays connected
+* Harder to prove that the graph stays connected, but if I make sure that for every star that I query, I get at least 3 other neighbours that are closest, it is garranted to stay connected.
 
-## Good solution n°3
-* I got another idea based on the strongest structure known, the triangle. Last year when I worked on implementing a scheduler to coordinate multiple threads, I discorvered [Gueorgui Voronoï](https://fr.wikipedia.org/wiki/Gueorgui_Vorono%C3%AF) and his [diagram](https://fr.wikipedia.org/wiki/Diagramme_de_Vorono%C3%AF). The interresting fact I remembered was the link between a Voronoï diagram and a Delaunay [Triangulation](https://fr.wikipedia.org/wiki/Triangulation_de_Delaunay).
-* To build a Delaunay Triangulation incrementaly whener testing a triangle I need to keep only the edges that build triangles whom circumcircle doesn't contain any other star.
-* The result is a connected graph with 3n edges at most thanks to the triangle arrangement
+# Conclusion
+
+After Implementing BowyerWatson's algorithm I had hit a bottleneck. This way of computing the triangulation requires to find every bad triangle for each point getting O(n²) if we simple iterate over the triangles allready formed. To use delaunay's triangulation I would have had to implement either the divide and conquer(by [John Guibas](https://fr.wikipedia.org/wiki/Leonidas_John_Guibas) and [Jorge Stolfi](https://fr.wikipedia.org/wiki/Jorge_Stolfi)) or the [Fortune sweep](https://en.wikipedia.org/wiki/Fortune%27s_algorithm) approach.
+
+I Opted to submit my Quadtree approach as it yielded the fastest and most coherent result. My QuadTree is able to redistribute the load over its childrens as to avoid the line problem.
 
