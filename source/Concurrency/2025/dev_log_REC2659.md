@@ -13,6 +13,11 @@ When tackling with thread synchronisation I am used to drawing on paper a [petri
 
 The role of the Petri net is to make it clear how a thread can go from one state to another. I uploaded my drawing as petri_net_REC2659.jpg.
 
+<figure>
+<p><img src="petri_net_REC2659.jpg" alt="image" /><br />
+Réseau de pétri !</p>
+</figure>
+
 ## Big problem and my struggles
 The harder part of this exercise was figuring out when should one thread stop.
 Because I use condition variables so the waiting threads don't consume processing power I need a way to wake all them so they can exit the function properly when the work is done
