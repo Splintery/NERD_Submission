@@ -13,191 +13,79 @@ void GlobalTeardown()
 {
 }
 
-float2 FindPointOnBisection(const float2 &p, const float2 &q, const float2 &mid)
+void QuadNode::insertStarRecurcively(float2 star)
 {
-    float slope_pq = (q.y - p.y) / (q.x - p.x);
-    float slope_bisection = -1 / slope_pq;
-    // std::cout << "slope of line: " << slope_pq << " slope bisection: " << slope_bisection << std::endl;
-    // Line equation y = mx + b, where m is the slope and x&y a point on the line
-    float b = mid.y - (slope_bisection * mid.x);
-  
-    return float2(
-        mid.x + 1.0f,// Ensures I get a different point on the bisection
-        slope_bisection * (mid.x + 1.0f) + b// The line formula for mid.x + 1
-    );
-}
-
-float2 FindLineLineIntersection(float2 p1, float2 p2, float2 p3, float2 p4)
-{
-    float denominator = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
-    if (denominator == 0)//! The line are parallel or coincident
-        return float2();
-
-    float pX = ((p1.x * p2.y - p1.y * p2.x) * (p3.x - p4.x) - (p1.x - p2.x) * (p3.x * p4.y - p3.y * p4.x)) / denominator;
-    float pY = ((p1.x * p2.y - p1.y * p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x * p4.y - p3.y * p4.x)) / denominator;
-
-    return float2(pX, pY);
-}
-
-Triangle equilateralTriangleFromIncircle(Circle cc)
-{
-    // Distance from center of cercle to vertexes of triangle
-    double R = (2.0f * cc.radius) / std::sqrt(3.0f);
-
-    // Fixed Angles : 0°, 120°, 240°
-    Triangle t = Triangle();
-    t.vertices[0] = float2((float)(cc.center.x + R * std::cos(0.0f)), (float)(cc.center.y + R * std::sin(0.0f)));
-    t.vertices[1] = float2((float)(cc.center.x + R * std::cos(2.0f * M_PI / 3.0f)), (float)(cc.center.y + R * std::sin(2.0f * M_PI / 3.0f)));
-    t.vertices[2] = float2((float)(cc.center.x + R * std::cos(4.0f * M_PI / 3.0f)), (float)(cc.center.y + R * std::sin(4.0f * M_PI / 3.0f)));
-
-    return t;
-}
-
-Circle ComputeCircumCircle(Triangle t)
-{
-    float2 bc_mid((t.vertices[1].x + t.vertices[2].x) / 2.0f, (t.vertices[1].y + t.vertices[2].y) / 2.0f);
-    float2 ab_mid((t.vertices[0].x + t.vertices[1].x) / 2.0f, (t.vertices[0].y + t.vertices[1].y) / 2.0f);
-
-
-    float2 bc_bisec = FindPointOnBisection(t.vertices[1], t.vertices[2], bc_mid);
-    float2 ab_bisec = FindPointOnBisection(t.vertices[0], t.vertices[1], ab_mid);
-
-    // std::cout << "Line[bc] " << b << "|" << c << "-mid->" << bc_mid <<std::endl;
-    // std::cout << "bc_bisec: " << bc_bisec << std::endl;
-    // std::cout << "Line[ab] " << t->vertices[0] << "|" << b << "-mid->" << ab_mid <<std::endl;
-    // std::cout << "ab_bisec: " << ab_bisec << std::endl;
-
-
-    float2 center_cc = FindLineLineIntersection(bc_mid, bc_bisec, ab_mid, ab_bisec);
-    return Circle(center_cc, center_cc.distance(t.vertices[0]));
-}
-
-std::vector<Triangle> BowyerWatson(std::vector<float2> const &starSystem)
-{
-    // Init super triangle
-    float minX = starSystem[0].x;
-    float maxX = starSystem[0].x;
-    float minY = starSystem[0].y;
-    float maxY = starSystem[0].y;
-
-    for (float2 const &star : starSystem) //* O(n)
+    if (tl_child != nullptr) // Check if subdivided
     {
-        minX = std::min(minX, star.x);
-        maxX = std::max(maxX, star.x);
-        minY = std::min(minY, star.y);
-        maxY = std::max(maxY, star.y);
+        if (tl_child->isStarInBounds(star)) tl_child->insertStarRecurcively(star);
+        else if (bl_child->isStarInBounds(star)) bl_child->insertStarRecurcively(star);
+        else if (tr_child->isStarInBounds(star)) tr_child->insertStarRecurcively(star);
+        else if (br_child->isStarInBounds(star)) br_child->insertStarRecurcively(star);
     }
-
-
-    float dx = maxX - minX; // The witdh of the solar system
-    float dy = maxY - minY; // The hight of the solar system
-
-    float diameter = std::max(dx, dy) * 2.0f;
-    Triangle superT = equilateralTriangleFromIncircle(Circle({dx / 2.0f, dy / 2.0f}, diameter));
-
-    std::vector<Triangle> triangulation = {superT};
-
-    // Step 2 insert the points 1 by 1
-    for (float2 p : starSystem) //* O(n)
+    else
     {
-        std::vector<Triangle> badTriangles;
+        std::cout << "Inserting star:" << star << " my tl: " << topleft << " my br: " << botright << " isInBounds(): " << isStarInBounds(star) << std::endl;
+        if (!isStarInBounds(star)) return;
+        stars.push_back(star);
 
-        for (Triangle t : triangulation)// 
+        if (stars.size() > max_capacity)
         {
-            Circle cc = ComputeCircumCircle(t);
-            if (p.distance(cc.center) < cc.radius)
+            subdivide();
+            for (float2 star : stars)
             {
-                badTriangles.push_back(t);
+                insertStarRecurcively(star);
             }
+            stars.clear();
         }
-
-        std::vector<Edge> polygon;
-        /*
-        for each triangle in badTriangles do // find the boundary of the polygonal hole
-            for each edge in triangle do
-                if edge is not shared by any other triangles in badTriangles
-                    add edge to polygon
-        */
-        for (size_t i = 0; i < badTriangles.size(); i++)
-        {
-            // Triangle ABC with AB = 0, BC = 1, CA = 2 in tuple
-            std::tuple<Edge, Edge, Edge> edges = badTriangles.at(i).getEdges(); 
-            std::tuple<bool, bool, bool> edge_shared = std::make_tuple(false, false, false);
-
-
-            for (size_t j = 0; j < badTriangles.size(); j++)
-            {
-                if (i != j) 
-                {
-                    // Triangle DEF with DE = 0, EF = 1, FD = 2 in tuple
-                    std::tuple<Edge, Edge, Edge> compared_edge = badTriangles.at(j).getEdges(); 
-
-                    if (std::get<0>(edges) == std::get<0>(compared_edge)
-                    || std::get<0>(edges) == std::get<1>(compared_edge)
-                    || std::get<0>(edges) == std::get<2>(compared_edge))
-                    {
-                        std::get<0>(edge_shared) = true;
-                    }
-                    if (std::get<1>(edges) == std::get<0>(compared_edge)
-                    || std::get<1>(edges) == std::get<1>(compared_edge)
-                    || std::get<1>(edges) == std::get<2>(compared_edge))
-                    {
-                        std::get<1>(edge_shared) = true;
-                    }
-                    if (std::get<2>(edges) == std::get<0>(compared_edge)
-                    || std::get<2>(edges) == std::get<1>(compared_edge)
-                    || std::get<2>(edges) == std::get<2>(compared_edge))
-                    {
-                        std::get<2>(edge_shared) = true;
-                    }
-                }
-            }
-
-            if (!std::get<0>(edge_shared)) polygon.push_back(std::get<0>(edges));
-            if (!std::get<1>(edge_shared)) polygon.push_back(std::get<1>(edges));
-            if (!std::get<2>(edge_shared)) polygon.push_back(std::get<2>(edges));
-        }
-
-        for (std::vector<Triangle>::iterator it = triangulation.begin(); it != triangulation.end();)
-        {
-            if (std::find(badTriangles.begin(), badTriangles.end(), *it) != badTriangles.end())
-            {
-                it = triangulation.erase(it);
-            }
-            else
-            {
-                it++;
-            }
-        }
-
-        // re-triangulate the polygonal hole
-        for (Edge e : polygon)
-        {
-            Triangle newTri = Triangle();
-            newTri.vertices[0] = p;
-            newTri.vertices[1] = e.u;
-            newTri.vertices[2] = e.v;
-            triangulation.push_back(newTri);
-        }   
     }
-    /*
-    for each triangle in triangulation // done inserting points, now clean up
-        if triangle contains a vertex from original super-triangle
-            remove triangle from triangulation
-    */
-    for (std::vector<Triangle>::iterator it = triangulation.begin(); it != triangulation.end();)
+}
+std::vector<float2> QuadNode::getNeighboursRec(float2 star)
+{
+    if (isStarInBounds(star))
     {
-        if (it->contains(superT.vertices[0]) || it->contains(superT.vertices[1]) || it->contains(superT.vertices[2]))
+        if (tl_child != nullptr) // is subdivided
         {
-            it = triangulation.erase(it);
+            if (tl_child->isStarInBounds(star)) return tl_child->getNeighboursRec(star);
+            else if (bl_child->isStarInBounds(star)) return bl_child->getNeighboursRec(star);
+            else if (tr_child->isStarInBounds(star)) return tr_child->getNeighboursRec(star);
+            else if (br_child->isStarInBounds(star)) return br_child->getNeighboursRec(star);
         }
         else
         {
-            it++;
+            return stars;
         }
     }
-    return triangulation;
+    else
+    {
+        return {};
+    }
 }
+void QuadNode::subdivide()
+{
+    float mid_x = (topleft.x + botright.x) / 2.0f;
+    float mid_y = (topleft.y + botright.y) / 2.0f;
+
+    tl_child = new QuadNode(topleft, {mid_x, mid_y}, max_capacity);
+    bl_child = new QuadNode({topleft.x, mid_y}, {mid_x, botright.y}, max_capacity);
+    tr_child = new QuadNode({mid_x, topleft.y}, {botright.x, mid_y}, max_capacity);
+    br_child = new QuadNode({mid_x, mid_y}, botright, max_capacity);
+}
+bool QuadNode::isStarInBounds(float2 star) // Striclty in bounds
+{
+    return (topleft.x <= star.x && topleft.y >= star.y)
+    && (star.x < botright.x && star.y > botright.y);
+}
+
+
+void QuadTree::insertStar(float2 star)
+{
+    root->insertStarRecurcively(star);
+}
+std::vector<float2> QuadTree::getNeighbours(float2 star) // Dumb version first
+{
+    return root->getNeighboursRec(star);
+}
+
 
 float Graph::kruskalMST()
 {
@@ -226,19 +114,49 @@ float Graph::kruskalMST()
 
 float FindTheLowestDInTheStarSystem(std::vector<float2> const &starSystem)
 {
-    std::vector<Triangle> dt = BowyerWatson(starSystem);  
+    float max_x, max_y, min_x, min_y;
+    max_x = starSystem.at(0).x;
+    max_y = starSystem.at(0).y;
+    min_x = starSystem.at(0).x;
+    min_y = starSystem.at(0).y;
 
+    for (float2 star : starSystem)
+    {
+        max_x = std::max(max_x, star.x);
+        max_y = std::max(max_y, star.y);
+        min_x = std::min(min_x, star.x);
+        min_y = std::min(min_y, star.y);
+    }
+    QuadTree qt = QuadTree({min_x, max_y}, {max_x, min_y}, 8);
+    for (float2 star : starSystem)
+    {
+        qt.insertStar(star);
+    }
+
+    std::cout << "Done inserting in QuadTree" << *qt.root << std::endl;
     Graph reduced_graph = Graph();
     reduced_graph.setV(starSystem.size());
 
     int E = 0;
-    for (Triangle t : dt)
+    for (float2 star : starSystem)
     {
-        reduced_graph.addEdge(t);
-        std::cout << t << std::endl;
-        E++;
+        std::vector<float2> neighbours = qt.getNeighbours(star);
+        std::cout << "Got this many neighbours: " << neighbours.size() << std::endl;
+        E+=neighbours.size() - 1;
+        if (neighbours.size() > 1) // will be avoided
+        {
+            for (float2 n : neighbours)
+            {
+                if (n != star)
+                {
+                    reduced_graph.addEdge({n, star});
+                }
+            }
+        }
     }
     reduced_graph.setE(E);
+
+    std::cout << "Running Kruskal" << std::endl;
 
     return reduced_graph.kruskalMST();
 }

@@ -48,7 +48,11 @@ struct float2
     }
     bool operator==(float2 const& other) const 
     {
-        return (x == other.x && y== other.y);
+        return (x == other.x && y == other.y);
+    }
+    bool operator!=(float2 const& other) const 
+    {
+        return (x != other.x || y != other.y);
     }
 };
 static std::ostream& operator<<(std::ostream &os, float2 const &point)                                                                                  //for struct output
@@ -95,69 +99,53 @@ static std::ostream& operator<<(std::ostream &os, Edge const &e)                
     return os;
 };
 
-//! Structure used in BowyerWatson's algorithm
+struct QuadNode
+{
+    
+    float2 topleft, botright; // Bounding box of Node
+    size_t max_capacity;
 
-struct Triangle
-{
-    float2 vertices[3];
-    // Triangle* neighbours[3];
-    bool containsEdge(const Edge &edge)
-    {
-        return edge.equal(vertices[0], vertices[1])
-        || edge.equal(vertices[1], vertices[2]) 
-        || edge.equal(vertices[2], vertices[0]);
-    }
-    bool contains(const float2 &point)
-    {
-        return vertices[0] == point || vertices[1] == point || vertices[2] == point;
-    }
-    std::tuple<Edge, Edge, Edge> getEdges()
-    {
-        return std::make_tuple(
-            Edge(vertices[0], vertices[1]),
-            Edge(vertices[1], vertices[2]),
-            Edge(vertices[2], vertices[0]));
-    }
-    bool operator==(Triangle const& other) const 
-    {
-        return (vertices[0] == other.vertices[0] || vertices[0] == other.vertices[1] || vertices[0] == other.vertices[2])
-            && (vertices[1] == other.vertices[0] || vertices[1] == other.vertices[1] || vertices[1] == other.vertices[2])
-            && (vertices[2] == other.vertices[0] || vertices[2] == other.vertices[1] || vertices[2] == other.vertices[2]);
-    }
+    std::vector<float2> stars;
+    QuadNode *tl_child = nullptr; // TOP LEFT CHILD
+    QuadNode *bl_child = nullptr; // BOTTOM LEFT CHILD
+    QuadNode *tr_child = nullptr; // TOP RIGHT CHILD
+    QuadNode *br_child = nullptr; // BOTTOM RIGHT CHILD
+
+    QuadNode(float2 topleft, float2 botright, size_t max_capacity): topleft(topleft), botright(botright), max_capacity(max_capacity) {}
+
+    void insertStarRecurcively(float2 star);
+    std::vector<float2> getNeighboursRec(float2 star);
+private:
+    void subdivide();
+    bool isStarInBounds(float2 star);
 };
-static std::ostream& operator<<(std::ostream &os, Triangle const &t)                                                                                  //for struct output
+
+static std::ostream& operator<<(std::ostream &os, QuadNode const &qn)                                                                                  //for struct output
 {
-    os << "Triangle {" << std::endl
-    << t.vertices[0] << std::endl
-    << t.vertices[1] << std::endl
-    << t.vertices[2] << std::endl
-    << "}";
+    os << "Topleft: " << qn.topleft << " Botright: " << qn.botright << std::endl;
+    if (qn.tl_child != nullptr)
+    {
+        os << "tl_child: " << *qn.tl_child;
+        os << "bl_child: " << *qn.bl_child;
+        os << "tr_child: " << *qn.tr_child;
+        os << "br_child: " << *qn.br_child;
+    }
     return os;
 };
 
-struct Circle
+struct QuadTree
 {
-    float2 center;
-    float radius;
+    QuadNode *root;
 
-    Circle(float2 center, float radius): center(center), radius(radius) {}
+    QuadTree(float2 topleft, float2 botright, size_t max_capacity)
+    {
+        root = new QuadNode(topleft, botright, max_capacity);
+    }
+    void insertStar(float2 star);
+    std::vector<float2> getNeighbours(float2 star);
 };
-static std::ostream& operator<<(std::ostream &os, Circle const &cc)                                                                                  //for struct output
-{
-    os << "center:" << cc.center << " & radius:" << cc.radius;
-    return os;
-}
 
-//! Structure used in BowyerWatson's algorithm
 
-//* Helper function for Bowyer Watson
-float2 FindPointOnBisection(const float2 &a, const float2 &b, const float2 &mid);
-float2 FindLineLineIntersection(float2 p1, float2 p2, float2 p3, float2 p4);
-Circle ComputeCircumCircle(Triangle t);
-
-Triangle equilateralTriangleFromIncircle(Circle cc);
-std::vector<Triangle> BowyerWatson(std::vector<float2> const &starSystem);
-//* Helper function for Bowyer Watson
 
 //! Structure used in Kruskal algorithm
 struct Graph
@@ -178,12 +166,9 @@ struct Graph
         this->E = E;
     }
 
-    void addEdge(Triangle t)
+    void addEdge(Edge e)
     {
-        std::tuple<Edge, Edge, Edge> new_edges = t.getEdges();
-        edges.push_back(std::get<0>(new_edges));
-        edges.push_back(std::get<1>(new_edges));
-        edges.push_back(std::get<2>(new_edges));
+        edges.push_back(e);
     }
 
     int getId(const float2& p) {

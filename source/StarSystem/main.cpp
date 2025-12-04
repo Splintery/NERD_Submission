@@ -63,6 +63,34 @@ int _tmain(int argc, TCHAR* argv[])
         // Perform runs
 #ifdef DEBUG
         const unsigned runs = 1;
+        // std::cout << "Testing QuadTree building correctly" << std::endl;
+        // starSystem.clear();
+        // starSystem.push_back({2, 2});
+        // starSystem.push_back({4, -2});
+        // starSystem.push_back({-3, -1});
+        // starSystem.push_back({-2, 4});
+        // starSystem.push_back({3, 6});
+        // starSystem.push_back({5, 3});
+        // starSystem.push_back({-7, -4});
+        // starSystem.push_back({-5, 3});
+        // starSystem.push_back({-3, 7});
+        // starSystem.push_back({-1, 3});
+        // starSystem.push_back({-1, -1});
+        // starSystem.push_back({1, 1});
+        // starSystem.push_back({1, 6});
+        // starSystem.push_back({-3, 1});
+        // starSystem.push_back({3, -4});
+        // starSystem.push_back({8, -1});
+        // starSystem.push_back({8, 2});
+        // starSystem.push_back({8, 6});
+        // starSystem.push_back({8, 9});
+        // starSystem.push_back({5, 9});
+        // starSystem.push_back({12, 6});
+        // starSystem.push_back({16, 10});
+        // starSystem.push_back({-5, -6});
+        // starSystem.push_back({-6, 2});
+        // starSystem.push_back({1, 2});
+
 #else
         const unsigned runs = 5;
         printf("Performing %u runs...\n", runs);
